@@ -4,6 +4,7 @@ import '../../services/auth_service.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/history_screen.dart';
 import '../../screens/login_screen.dart';
+import '../../widgets/profile/profile.dart';
 
 class NavBar extends StatelessWidget {
   final int currentIndex; 
@@ -21,6 +22,11 @@ class NavBar extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HistoryScreen()),
+      );
+    } else if (index == 3) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
       );
     } else if (index == 4) {
       await AuthService().logout();
@@ -104,8 +110,7 @@ class NavBar extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
             child: Column(
               children: [
-                //_buildMenuItem(context, 2, Icons.settings_outlined, 'Configurações'),
-                //_buildMenuItem(context, 3, Icons.person_outline, 'Perfil'),
+                _buildMenuItem(context, 3, Icons.person_outline, 'Perfil'),
                 const SizedBox(height: 8),
                 _buildMenuItem(context, 4, Icons.logout, 'Sair', isLogout: true),
               ],

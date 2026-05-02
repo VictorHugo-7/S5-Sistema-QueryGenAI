@@ -5,14 +5,11 @@ import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'forgot_password_screen.dart';
 
-// Importe os widgets de gráficos (Ajuste o caminho conforme necessário)
 import '../widgets/graphics/activity_bars_widget.dart';
 import '../widgets/graphics/bar_chart_widget.dart';
 import '../widgets/graphics/donut_chart_widget.dart';
 import '../widgets/graphics/line_chart_widget.dart';
 import '../widgets/graphics/stat_pill_widget.dart';
-
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,14 +19,14 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _isLogin        = true;
-  bool _loading        = false;
-  bool _keepConnected  = false;
-  bool _obscure        = true;
+  bool _isLogin = true;
+  bool _loading = false;
+  bool _keepConnected = false;
+  bool _obscure = true;
 
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
-  final _nomeController  = TextEditingController();
+  final _nomeController = TextEditingController();
 
   @override
   void dispose() {
@@ -66,7 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         await api.register(email, senha);
         _showSnack('Conta criada! Faça login.', AppColors.green);
-        setState(() { _isLogin = true; _clearFields(); });
+        setState(() {
+          _isLogin = true;
+          _clearFields();
+        });
       }
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''), AppColors.red);
@@ -86,7 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Verifica a largura da tela para decidir o layout
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 900;
 
@@ -95,23 +94,20 @@ class _LoginScreenState extends State<LoginScreen> {
       body: isDesktop
           ? Row(
               children: [
-                // Lado Esquerdo: Formulário de Login
                 Expanded(
                   flex: 4,
                   child: _buildLeftPanel(),
                 ),
-                // Lado Direito: Gráficos Alinhados
                 Expanded(
                   flex: 6,
                   child: _buildRightPanel(),
                 ),
               ],
             )
-          : _buildLeftPanel(), // Em telas menores, exibe apenas o formulário
+          : _buildLeftPanel(),
     );
   }
 
-  // Painel Esquerdo com o Formulário
   Widget _buildLeftPanel() {
     return Center(
       child: SingleChildScrollView(
@@ -124,11 +120,10 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Painel Direito com os Gráficos
   Widget _buildRightPanel() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0b0d14), // Fundo levemente mais escuro para destacar
+        color: const Color(0xFF0b0d14),
         border: Border(
           left: BorderSide(color: AppColors.border.withOpacity(0.5), width: 1),
         ),
@@ -142,11 +137,8 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Linha 1: Pílulas de Estatísticas
                 const StatPillsRow(),
                 const SizedBox(height: 24),
-                
-                // Linha 2: Gráfico de Linha e Donut
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
@@ -168,8 +160,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                
-                // Linha 3: Gráfico de Barras e Barras de Atividade
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: const [
@@ -202,9 +192,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Logo
         Container(
-          width: 56, height: 56,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             color: AppColors.accent,
             borderRadius: BorderRadius.circular(14),
@@ -248,8 +238,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ]),
         ),
         const SizedBox(height: 36),
-
-        // Título
         const Text(
           'Bem vindo de volta!',
           style: TextStyle(
@@ -265,8 +253,6 @@ class _LoginScreenState extends State<LoginScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 32),
-
-        // Tabs
         Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
@@ -280,27 +266,17 @@ class _LoginScreenState extends State<LoginScreen> {
           ]),
         ),
         const SizedBox(height: 28),
-
-        // Nome — só no cadastro
         if (!_isLogin) ...[
           _buildField('Nome', 'Insira seu nome', _nomeController),
           const SizedBox(height: 18),
         ],
-
-        // E-mail
         _buildField('E-mail', 'Insira seu e-mail', _emailController,
             keyboardType: TextInputType.emailAddress),
         const SizedBox(height: 18),
-
-        // Senha
         _buildPasswordField(),
         const SizedBox(height: 16),
-
-        // Checkbox + esqueci
         if (_isLogin) _buildBottomRow(),
         const SizedBox(height: 28),
-
-        // Botão principal
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -308,32 +284,21 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: _loading ? null : _submit,
             child: _loading
                 ? const SizedBox(
-                    width: 20, height: 20,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(
                         color: Colors.white, strokeWidth: 2))
                 : Text(_isLogin ? 'Entrar' : 'Cadastrar'),
           ),
         ),
         const SizedBox(height: 20),
-
-        // Link alternativo
         GestureDetector(
-          onTap: () => setState(() { _isLogin = !_isLogin; _clearFields(); }),
+          onTap: () => setState(() {
+            _isLogin = !_isLogin;
+            _clearFields();
+          }),
           child: RichText(
-            text: TextSpan(children: [
-              TextSpan(
-                  text: _isLogin
-                      ? 'Não possui uma conta? '
-                      : 'Já tem uma conta? ',
-                  style: const TextStyle(
-                      color: AppColors.text2, fontSize: 14)),
-              TextSpan(
-                  text: _isLogin ? 'Cadastre-se' : 'Entrar',
-                  style: const TextStyle(
-                      color: AppColors.accent2,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500)),
-            ]),
+            text: const TextSpan(children: []),
           ),
         ),
       ],
@@ -344,7 +309,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final active = _isLogin == isLoginTab;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() { _isLogin = isLoginTab; _clearFields(); }),
+        onTap: () =>
+            setState(() => {_isLogin = isLoginTab, _clearFields()}),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 11),
@@ -352,9 +318,11 @@ class _LoginScreenState extends State<LoginScreen> {
             color: active ? AppColors.accent : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
             boxShadow: active
-                ? [BoxShadow(
-                    color: AppColors.accent.withOpacity(0.3),
-                    blurRadius: 12)]
+                ? [
+                    BoxShadow(
+                        color: AppColors.accent.withOpacity(0.3),
+                        blurRadius: 12)
+                  ]
                 : null,
           ),
           child: Text(
@@ -377,10 +345,12 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Row(children: [
           SizedBox(
-            width: 20, height: 20,
+            width: 20,
+            height: 20,
             child: Checkbox(
               value: _keepConnected,
-              onChanged: (v) => setState(() => _keepConnected = v ?? false),
+              onChanged: (v) =>
+                  setState(() => _keepConnected = v ?? false),
               activeColor: AppColors.accent,
               side: const BorderSide(color: AppColors.border, width: 1.5),
               shape: RoundedRectangleBorder(
@@ -454,7 +424,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 color: AppColors.text3,
                 size: 20,
               ),
-              onPressed: () => setState(() => _obscure = !_obscure),
+              onPressed: () =>
+                  setState(() => _obscure = !_obscure),
             ),
           ),
         ),
