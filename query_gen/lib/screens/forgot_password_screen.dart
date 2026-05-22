@@ -41,6 +41,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (_step == 0) {
         _email = _emailController.text.trim();
         if (_email.isEmpty) throw Exception('Insira seu e-mail');
+        if (!RegExp(r'^[\w.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$').hasMatch(_email)) {
+          throw Exception('Insira um e-mail válido');
+        }
         // Agora o backend retorna erro 404 se email não existir
         await api.solicitarRecuperacao(_email);
         if (!mounted) return;
@@ -57,8 +60,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       } else {
         final nova    = _senhaController.text.trim();
         final confirm = _confirmController.text.trim();
+        if (nova.length < 8) throw Exception('A senha deve ter pelo menos 8 caracteres');
+        if (!RegExp(r'[A-Z]').hasMatch(nova)) throw Exception('A senha deve conter pelo menos uma letra maiúscula');
+        if (!RegExp(r'[0-9]').hasMatch(nova)) throw Exception('A senha deve conter pelo menos um número');
+        if (!RegExp(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>/?]').hasMatch(nova)) throw Exception('A senha deve conter pelo menos um caractere especial');
         if (nova != confirm) throw Exception('As senhas não coincidem');
-        if (nova.length < 6) throw Exception('Mínimo 6 caracteres');
         await api.redefinirSenha(_tokenId, nova);
         if (!mounted) return;
         _showSnack('Senha redefinida com sucesso!', AppColors.green);
@@ -188,7 +194,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ],
 
                   if (_step == 2) ...[
-                    _buildField('Nova senha', 'Mínimo 6 caracteres',
+                    _buildField('Nova senha', 'Mínimo 8 caracteres',
                         _senhaController,
                         obscure: _obscure1,
                         toggleObscure: () =>

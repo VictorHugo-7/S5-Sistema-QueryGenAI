@@ -9,6 +9,8 @@ async function setup() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       email VARCHAR(255) UNIQUE NOT NULL,
       senha_hash VARCHAR(255) NOT NULL,
+      nome VARCHAR(255) NULL,
+      foto MEDIUMTEXT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);

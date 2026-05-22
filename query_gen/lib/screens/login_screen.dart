@@ -24,16 +24,19 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _keepConnected = false;
   bool _obscure = true;
+  bool _obscureConfirm = true;
 
-  final _emailController = TextEditingController();
-  final _senhaController = TextEditingController();
-  final _nomeController = TextEditingController();
+  final _emailController        = TextEditingController();
+  final _senhaController        = TextEditingController();
+  final _nomeController         = TextEditingController();
+  final _confirmSenhaController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
     _senhaController.dispose();
     _nomeController.dispose();
+    _confirmSenhaController.dispose();
     super.dispose();
   }
 
@@ -41,15 +44,49 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.clear();
     _senhaController.clear();
     _nomeController.clear();
+    _confirmSenhaController.clear();
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$').hasMatch(email);
+  }
+
+  String? _validatePassword(String password) {
+    if (password.length < 8) return 'A senha deve ter pelo menos 8 caracteres';
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return 'A senha deve conter pelo menos uma letra maiúscula';
+    if (!RegExp(r'[0-9]').hasMatch(password)) return 'A senha deve conter pelo menos um número';
+    if (!RegExp(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>/?]').hasMatch(password)) {
+      return 'A senha deve conter pelo menos um caractere especial';
+    }
+    return null;
   }
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
     final senha = _senhaController.text.trim();
-    
+
     if (email.isEmpty || senha.isEmpty) {
       _showSnack('Preencha todos os campos', AppColors.red);
       return;
+    }
+
+
+    if (!_isValidEmail(email)) {
+      _showSnack('Insira um e-mail válido', AppColors.red);
+      return;
+    }
+
+    if (!_isLogin) {
+      final passwordError = _validatePassword(senha);
+      if (passwordError != null) {
+        _showSnack(passwordError, AppColors.red);
+        return;
+      }
+      final confirm = _confirmSenhaController.text.trim();
+      if (senha != confirm) {
+        _showSnack('As senhas não coincidem', AppColors.red);
+        return;
+      }
     }
 
     setState(() => _loading = true);
@@ -57,14 +94,19 @@ class _LoginScreenState extends State<LoginScreen> {
       final api = ApiService();
       if (_isLogin) {
         final data = await api.login(email, senha);
-        await AuthService().saveToken(data['token'], data['email']);
+        await AuthService().saveToken(
+          data['token'],
+          data['email'],
+          nome: data['nome'] as String?,
+        );
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       } else {
-        await api.register(email, senha);
+        final nome = _nomeController.text.trim();
+        await api.register(email, senha, nome);
         _showSnack('Conta criada! Faça login.', AppColors.green);
         setState(() {
           _isLogin = true;
@@ -96,18 +138,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: _buildLeftPanel(),
-          ),
-          Expanded(
-            flex: 8,
-            child: _buildRightPanel(),
-          ),
-        ],
-      ),
+
+      body: isDesktop
+          ? Row(
+              children: [
+                Expanded(flex: 4, child: _buildLeftPanel()),
+                Expanded(flex: 6, child: _buildRightPanel()),
+              ],
+            )
+          : _buildLeftPanel(),
+
     );
   }
 
@@ -123,6 +163,63 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+
+  Widget _buildRightPanel() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0b0d14),
+        border: Border(
+          left: BorderSide(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(48),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const StatPillsRow(),
+                const SizedBox(height: 24),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Expanded(
+                      flex: 5,
+                      child: SizedBox(height: 280, child: LineChartWidget()),
+                    ),
+                    SizedBox(width: 24),
+                    Expanded(
+                      flex: 4,
+                      child: SizedBox(height: 280, child: DonutChartWidget()),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Expanded(
+                      flex: 4,
+                      child: SizedBox(height: 280, child: BarChartWidget()),
+                    ),
+                    SizedBox(width: 24),
+                    Expanded(
+                      flex: 5,
+                      child: SizedBox(height: 280, child: ActivityBarsWidget()),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildForm() {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -130,6 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         // LOGO SECTION
         Container(
+
   width: 90,
   height: 90,
   child: Image.asset(
@@ -138,6 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
   ),
 ),
         const SizedBox(height: 6),
+
         RichText(
           text: const TextSpan(children: [
             TextSpan(
@@ -154,20 +253,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     fontWeight: FontWeight.w700)),
           ]),
         ),
-        const SizedBox(height: 20),
-        
-        const Text(
-          'Bem vindo!',
-          style: TextStyle(
+
+        const SizedBox(height: 36),
+        Text(
+          _isLogin ? 'Bem vindo de volta!' : 'Crie sua conta',
+          style: const TextStyle(
+
               color: AppColors.text,
               fontSize: 24,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Insira seus dados para acessar a plataforma',
-          style: TextStyle(color: AppColors.text2, fontSize: 13),
+
+        Text(
+          _isLogin
+              ? 'Insira seu e-mail e sua senha para continuar'
+              : 'Preencha os dados abaixo para se cadastrar',
+          style: const TextStyle(color: AppColors.text2, fontSize: 14),
+
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -223,9 +327,31 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
         _buildField('E-mail', 'exemplo@email.com', _emailController,
             keyboardType: TextInputType.emailAddress),
-        const SizedBox(height: 16),
-        _buildPasswordField(),
-        
+
+        const SizedBox(height: 18),
+        _buildPasswordField(
+          label: 'Senha',
+          hint: _isLogin ? 'Insira sua senha' : 'Mínimo 8 caracteres',
+          controller: _senhaController,
+          obscure: _obscure,
+          onToggle: () => setState(() => _obscure = !_obscure),
+        ),
+        if (!_isLogin) ...[
+          const SizedBox(height: 6),
+          const Text(
+            'Use 8+ caracteres com maiúscula, número e caractere especial.',
+            style: TextStyle(color: AppColors.text3, fontSize: 11, height: 1.4),
+          ),
+          const SizedBox(height: 18),
+          _buildPasswordField(
+            label: 'Confirmar senha',
+            hint: 'Repita sua senha',
+            controller: _confirmSenhaController,
+            obscure: _obscureConfirm,
+            onToggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
+          ),
+        ],
+
         const SizedBox(height: 16),
         if (_isLogin) _buildBottomRow(),
         const SizedBox(height: 16),
@@ -247,8 +373,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 20,
                     child: CircularProgressIndicator(
                         color: Colors.white, strokeWidth: 2))
-                : Text(_isLogin ? 'Entrar' : 'Criar Conta', 
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
+
+                : Text(_isLogin ? 'Entrar' : 'Cadastrar'),
+
           ),
         ),
       ],
@@ -259,6 +386,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final active = _isLogin == isLoginTab;
     return Expanded(
       child: GestureDetector(
+
         behavior: HitTestBehavior.opaque,
         onTap: () => setState(() { 
           _isLogin = isLoginTab; 
@@ -267,6 +395,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Center(
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 250),
+
             style: TextStyle(
               color: active ? Colors.white : AppColors.text2,
               fontSize: 13,
@@ -339,28 +468,37 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildPasswordField() {
+  Widget _buildPasswordField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required bool obscure,
+    required VoidCallback onToggle,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Senha', style: TextStyle(color: AppColors.text2, fontSize: 12, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 6),
+
+        Text(label,
+            style: const TextStyle(
+                color: AppColors.text2,
+                fontSize: 13,
+                fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
         TextField(
-          controller: _senhaController,
-          obscureText: _obscure,
-          style: const TextStyle(color: AppColors.text, fontSize: 14),
+          controller: controller,
+          obscureText: obscure,
+          style: const TextStyle(color: AppColors.text, fontSize: 15),
           decoration: InputDecoration(
-            hintText: '••••••••',
-            hintStyle: const TextStyle(color: AppColors.text3, fontSize: 13),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
-            filled: true,
-            fillColor: AppColors.surface,
+            hintText: hint,
             suffixIcon: IconButton(
-              icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility, color: AppColors.text3, size: 18),
-              onPressed: () => setState(() => _obscure = !_obscure),
+              icon: Icon(
+                obscure ? Icons.visibility_off : Icons.visibility,
+                color: AppColors.text3,
+                size: 20,
+              ),
+              onPressed: onToggle,
+
             ),
           ),
         ),
@@ -368,41 +506,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildRightPanel() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0b0d14),
-        border: Border(left: BorderSide(color: AppColors.border.withOpacity(0.5))),
-      ),
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(40),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Column(
-              children: [
-                const StatPillsRow(),
-                const SizedBox(height: 24),
-                Row(
-                  children: const [
-                    Expanded(flex: 5, child: SizedBox(height: 280, child: LineChartWidget())),
-                    SizedBox(width: 24),
-                    Expanded(flex: 4, child: SizedBox(height: 280, child: DonutChartWidget())),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: const [
-                    Expanded(flex: 4, child: SizedBox(height: 280, child: BarChartWidget())),
-                    SizedBox(width: 24),
-                    Expanded(flex: 5, child: SizedBox(height: 280, child: ActivityBarsWidget())),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+
+  
 }
+
+
+

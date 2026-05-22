@@ -44,11 +44,12 @@ class ApiService {
     return jsonDecode(res.body) as List<dynamic>;
   }
 
-  Future<Map<String, dynamic>> register(String email, String senha) async {
+  Future<Map<String, dynamic>> register(
+      String email, String senha, String nome) async {
     final res = await http.post(
       Uri.parse('$_base/auth/register'),
       headers: _jsonHeaders,
-      body: jsonEncode({'email': email, 'senha': senha}),
+      body: jsonEncode({'email': email, 'senha': senha, 'nome': nome}),
     );
     return _parse(res);
   }
@@ -60,6 +61,32 @@ class ApiService {
       body: jsonEncode({'email': email, 'senha': senha}),
     );
     return _parse(res);
+  }
+
+  Future<Map<String, dynamic>> getPerfil() async {
+    final res = await http.get(
+      Uri.parse('$_base/api/perfil'),
+      headers: await _authHeaders,
+    );
+    return _parse(res);
+  }
+
+  Future<void> updatePerfil({
+    String? nome,
+    String? foto,
+    String? novaSenha,
+  }) async {
+    final body = <String, dynamic>{};
+    if (nome != null)      body['nome']      = nome;
+    if (foto != null)      body['foto']      = foto;
+    if (novaSenha != null) body['novaSenha'] = novaSenha;
+
+    final res = await http.put(
+      Uri.parse('$_base/api/perfil'),
+      headers: await _authHeaders,
+      body: jsonEncode(body),
+    );
+    _parse(res);
   }
 
   Future<Map<String, dynamic>> gerarScript(String pergunta) async {

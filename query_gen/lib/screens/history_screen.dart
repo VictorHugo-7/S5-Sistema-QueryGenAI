@@ -299,45 +299,39 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
 
-          // Botões — proporcionais com padding uniforme
+          // Botões
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
             child: Row(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: isLoadingThis ? null : () => _verDados(item),
-                    icon: isLoadingThis
-                        ? const SizedBox(
-                            width: 12, height: 12,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
-                        : Icon(_iconGrafico(grafico), size: 14),
-                    label: const Text('Visualizar',
-                        style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                ElevatedButton.icon(
+                  onPressed: isLoadingThis ? null : () => _verDados(item),
+                  icon: isLoadingThis
+                      ? const SizedBox(
+                          width: 12, height: 12,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Icon(_iconGrafico(grafico), size: 14),
+                  label: const Text('Visualizar',
+                      style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(
-                          text: item['sql_gerado'] ?? ''));
-                      _showSnack('SQL copiado!', AppColors.green);
-                    },
-                    icon: const Icon(Icons.copy, size: 14),
-                    label: const Text('Copiar SQL',
-                        style: TextStyle(fontSize: 12)),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(
+                        text: item['sql_gerado'] ?? ''));
+                    _showSnack('SQL copiado!', AppColors.green);
+                  },
+                  icon: const Icon(Icons.copy, size: 14),
+                  label: const Text('Copiar SQL',
+                      style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
                   ),
                 ),
               ],
