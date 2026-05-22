@@ -36,7 +36,7 @@
 | Nome                              |
 |-----------------------------------|
 | Antônio Vítor Bozzo de Napoli     |
-| Eduardo                           |
+| Eduardo de Bodas                  |
 | José Henrique Villanueva Malavazi |
 | Leonardo Kazushi Hideshima	      |
 | Luan Camara Lopes                 | 
