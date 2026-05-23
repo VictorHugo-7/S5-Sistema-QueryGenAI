@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/theme_notifier.dart';
+import '../main.dart';
 import '../widgets/graphics/activity_bars_widget.dart';
 import '../widgets/graphics/bar_chart_widget.dart';
 import '../widgets/graphics/donut_chart_widget.dart';
@@ -13,17 +15,39 @@ class PrivacyPolicyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 1100;
+    final ThemeNotifier notifier = MyApp.of(context);
+    final bool isDark = notifier.isDark;
+
+    final themeButton = Positioned(
+      top: 16, right: 16,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+        child: IconButton(
+          key: ValueKey(isDark),
+          icon: Icon(
+            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            color: AppColors.text2Of(context), size: 22,
+          ),
+          tooltip: isDark ? 'Modo claro' : 'Modo escuro',
+          onPressed: notifier.toggle,
+        ),
+      ),
+    );
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: isDesktop
-          ? Row(
-              children: [
-                Expanded(flex: 4, child: _buildContent(context)),
-                Expanded(flex: 6, child: _buildRightPanel()),
-              ],
-            )
-          : _buildContent(context),
+      backgroundColor: AppColors.bgOf(context),
+      body: Stack(
+        children: [
+          isDesktop
+              ? Row(children: [
+                  Expanded(flex: 4, child: _buildContent(context)),
+                  Expanded(flex: 6, child: _buildRightPanel(context)),
+                ])
+              : _buildContent(context),
+          themeButton,
+        ],
+      ),
     );
   }
 
@@ -36,33 +60,20 @@ class PrivacyPolicyScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Logo
               Center(
                 child: Column(
                   children: [
                     SizedBox(
-                      width: 70,
-                      height: 70,
-                      child: Image.asset(
-                        'assets/Logo QueryGen (1).png',
-                        fit: BoxFit.contain,
-                      ),
+                      width: 70, height: 70,
+                      child: Image.asset('assets/Logo QueryGen (1).png', fit: BoxFit.contain),
                     ),
                     const SizedBox(height: 6),
                     RichText(
-                      text: const TextSpan(children: [
-                        TextSpan(
-                            text: 'Query',
-                            style: TextStyle(
-                                color: AppColors.text,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700)),
-                        TextSpan(
-                            text: 'Gen',
-                            style: TextStyle(
-                                color: AppColors.accent2,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700)),
+                      text: TextSpan(children: [
+                        TextSpan(text: 'Query',
+                            style: TextStyle(color: AppColors.textOf(context), fontSize: 16, fontWeight: FontWeight.w700)),
+                        const TextSpan(text: 'Gen',
+                            style: TextStyle(color: AppColors.accent2, fontSize: 16, fontWeight: FontWeight.w700)),
                       ]),
                     ),
                   ],
@@ -70,54 +81,39 @@ class PrivacyPolicyScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
 
-              // Título
-              const Text(
-                'Política de Privacidade',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.text,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
-              ),
+              Text('Política de Privacidade',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textOf(context), fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
               const SizedBox(height: 16),
 
-              // Intro
-              const Text(
-                'Sua privacidade é importante para nós. Todas as informações fornecidas são protegidas e armazenadas com segurança.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.text2, fontSize: 13, height: 1.6),
-              ),
+              Text('Sua privacidade é importante para nós. Todas as informações fornecidas são protegidas e armazenadas com segurança.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.text2Of(context), fontSize: 13, height: 1.6)),
               const SizedBox(height: 24),
 
-              _buildSection('1. Coleta de Dados',
+              _buildSection(context, '1. Coleta de Dados',
                   'Coletamos apenas informações necessárias para funcionamento da plataforma, como nome, e-mail e dados de uso. Não coletamos dados sensíveis sem consentimento explícito.'),
-              _buildSection('2. Compartilhamento',
+              _buildSection(context, '2. Compartilhamento',
                   'Não compartilhamos seus dados pessoais com terceiros sem autorização, exceto quando exigido por lei ou para prestação dos serviços contratados.'),
-              _buildSection('3. Segurança',
+              _buildSection(context, '3. Segurança',
                   'Aplicamos medidas técnicas e organizacionais para proteger suas informações contra acesso não autorizado, perda ou destruição acidental.'),
-              _buildSection('4. Cookies',
+              _buildSection(context, '4. Cookies',
                   'Utilizamos cookies para melhorar sua experiência na plataforma. Você pode desativá-los nas configurações do seu navegador, mas isso pode afetar algumas funcionalidades.'),
-              _buildSection('5. Seus Direitos',
+              _buildSection(context, '5. Seus Direitos',
                   'Você tem direito de acessar, corrigir ou solicitar a exclusão de seus dados pessoais a qualquer momento, conforme previsto pela LGPD.'),
-              _buildSection('6. Retenção de Dados',
+              _buildSection(context, '6. Retenção de Dados',
                   'Mantemos seus dados pelo tempo necessário para a prestação dos serviços ou conforme exigido por obrigações legais. Após esse período, os dados são excluídos com segurança.'),
 
               const SizedBox(height: 32),
 
-              // Voltar
               GestureDetector(
                 onTap: () => Navigator.of(context).pop(),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.arrow_back, color: AppColors.text3, size: 14),
-                    SizedBox(width: 6),
-                    Text(
-                      'Voltar para cadastro',
-                      style: TextStyle(color: AppColors.text3, fontSize: 13),
-                    ),
+                    Icon(Icons.arrow_back, color: AppColors.text3Of(context), size: 14),
+                    const SizedBox(width: 6),
+                    Text('Voltar para cadastro', style: TextStyle(color: AppColors.text3Of(context), fontSize: 13)),
                   ],
                 ),
               ),
@@ -129,33 +125,26 @@ class PrivacyPolicyScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSection(String title, String content) {
+  Widget _buildSection(BuildContext context, String title, String content) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
-                  color: AppColors.accent2,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  height: 1.4)),
+          Text(title, style: const TextStyle(color: AppColors.accent2, fontSize: 13, fontWeight: FontWeight.w600, height: 1.4)),
           const SizedBox(height: 6),
-          Text(content,
-              style: const TextStyle(
-                  color: AppColors.text2, fontSize: 13, height: 1.6)),
+          Text(content, style: TextStyle(color: AppColors.text2Of(context), fontSize: 13, height: 1.6)),
         ],
       ),
     );
   }
 
-  Widget _buildRightPanel() {
+Widget _buildRightPanel(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0b0d14),
+        color: AppColors.bgOf(context),
         border: Border(
-          left: BorderSide(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+          left: BorderSide(color: AppColors.borderOf(context), width: 1),
         ),
       ),
       child: Center(
@@ -169,32 +158,17 @@ class PrivacyPolicyScreen extends StatelessWidget {
               children: [
                 StatPillsRow(),
                 SizedBox(height: 24),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                        flex: 5,
-                        child: SizedBox(height: 280, child: LineChartWidget())),
-                    SizedBox(width: 24),
-                    Expanded(
-                        flex: 4,
-                        child: SizedBox(height: 280, child: DonutChartWidget())),
-                  ],
-                ),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 5, child: SizedBox(height: 280, child: LineChartWidget())),
+                  SizedBox(width: 24),
+                  Expanded(flex: 4, child: SizedBox(height: 280, child: DonutChartWidget())),
+                ]),
                 SizedBox(height: 24),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                        flex: 4,
-                        child: SizedBox(height: 280, child: BarChartWidget())),
-                    SizedBox(width: 24),
-                    Expanded(
-                        flex: 5,
-                        child:
-                            SizedBox(height: 280, child: ActivityBarsWidget())),
-                  ],
-                ),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 4, child: SizedBox(height: 280, child: BarChartWidget())),
+                  SizedBox(width: 24),
+                  Expanded(flex: 5, child: SizedBox(height: 280, child: ActivityBarsWidget())),
+                ]),
               ],
             ),
           ),

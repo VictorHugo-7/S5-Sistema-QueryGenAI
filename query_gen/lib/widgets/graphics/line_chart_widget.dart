@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_colors.dart';
 
 class LineChartWidget extends StatelessWidget {
   final String label;
@@ -22,11 +23,18 @@ class LineChartWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bgColor      = AppColors.panelOf(context);
+    final borderColor  = AppColors.borderOf(context);
+    final labelColor   = AppColors.text2Of(context);
+    final valueColor   = AppColors.textOf(context);
+    final xLabelColor  = AppColors.text3Of(context);
+    final ghostColor   = AppColors.borderOf(context);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF0f1119),
-        border: Border.all(color: const Color(0xFF1e2236)),
+        color: bgColor,
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -37,29 +45,21 @@ class LineChartWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(label,
-                    style: const TextStyle(
-                        color: Color(0xFF6b7280), fontSize: 12)),
+                Text(label, style: TextStyle(color: labelColor, fontSize: 12)),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(value,
-                        style: const TextStyle(
-                            color: Color(0xFFf0f2fc),
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700)),
+                    Text(value, style: TextStyle(color: valueColor, fontSize: 22, fontWeight: FontWeight.w700)),
                     const SizedBox(width: 8),
-                    Text(delta,
-                        style: const TextStyle(
-                            color: Color(0xFF34d399), fontSize: 12)),
+                    Text(delta, style: const TextStyle(color: Color(0xFF34d399), fontSize: 12)),
                   ],
                 ),
               ]),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                _LegendDot(color: lineColor, label: '2025'),
+                _LegendDot(color: lineColor, label: '2025', labelColor: labelColor),
                 const SizedBox(height: 4),
-                const _LegendDot(color: Color(0xFF2a3050), label: '2024'),
+                _LegendDot(color: ghostColor, label: '2024', labelColor: labelColor),
               ]),
             ],
           ),
@@ -70,10 +70,7 @@ class LineChartWidget extends StatelessWidget {
                 data2025: data2025,
                 data2024: data2024,
                 lineColor: lineColor,
-                lineProgress: 1.0,
-                areaOpacity: 1.0,
-                pulseRadius: 4.0,
-                hoveredIndex: null,
+                ghostColor: ghostColor,
               ),
               child: const SizedBox.expand(),
             ),
@@ -81,11 +78,7 @@ class LineChartWidget extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: xLabels
-                .map((l) => Text(l,
-                    style: const TextStyle(
-                        color: Color(0xFF3d4460), fontSize: 9.5)))
-                .toList(),
+            children: xLabels.map((l) => Text(l, style: TextStyle(color: xLabelColor, fontSize: 9.5))).toList(),
           ),
         ],
       ),
@@ -97,28 +90,13 @@ class _LinePainter extends CustomPainter {
   final List<double> data2025;
   final List<double> data2024;
   final Color lineColor;
-  final double lineProgress;
-  final double areaOpacity;
-  final double pulseRadius;
-  final int? hoveredIndex;
+  final Color ghostColor;
 
-  _LinePainter({
-    required this.data2025,
-    required this.data2024,
-    required this.lineColor,
-    required this.lineProgress,
-    required this.areaOpacity,
-    required this.pulseRadius,
-    this.hoveredIndex,
-  });
+  _LinePainter({required this.data2025, required this.data2024, required this.lineColor, required this.ghostColor});
 
   List<Offset> _points(List<double> data, Size size) {
     final n = data.length;
-    return List.generate(n, (i) {
-      final x = i / (n - 1) * size.width;
-      final y = (1.0 - data[i]) * size.height;
-      return Offset(x, y);
-    });
+    return List.generate(n, (i) => Offset(i / (n - 1) * size.width, (1.0 - data[i]) * size.height));
   }
 
   Path _smoothPath(List<Offset> pts) {
@@ -126,9 +104,9 @@ class _LinePainter extends CustomPainter {
     if (pts.isEmpty) return path;
     path.moveTo(pts[0].dx, pts[0].dy);
     for (int i = 0; i < pts.length - 1; i++) {
-      final cp1 = Offset((pts[i].dx + pts[i + 1].dx) / 2, pts[i].dy);
-      final cp2 = Offset((pts[i].dx + pts[i + 1].dx) / 2, pts[i + 1].dy);
-      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, pts[i + 1].dx, pts[i + 1].dy);
+      final cp1 = Offset((pts[i].dx + pts[i+1].dx) / 2, pts[i].dy);
+      final cp2 = Offset((pts[i].dx + pts[i+1].dx) / 2, pts[i+1].dy);
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, pts[i+1].dx, pts[i+1].dy);
     }
     return path;
   }
@@ -138,76 +116,44 @@ class _LinePainter extends CustomPainter {
     final pts25 = _points(data2025, size);
     final pts24 = _points(data2024, size);
 
-    // 2024 ghost line
-    final ghostPath = _smoothPath(pts24);
-    canvas.drawPath(
-      ghostPath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = const Color(0xFF2a3050),
-    );
+    canvas.drawPath(_smoothPath(pts24),
+        Paint()..style = PaintingStyle.stroke..strokeWidth = 1.5..color = ghostColor);
 
-    // 2025 area
     final linePath = _smoothPath(pts25);
     final areaPath = Path.from(linePath)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    canvas.drawPath(
-      areaPath,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            lineColor.withOpacity(0.22),
-            lineColor.withOpacity(0),
-          ],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)),
-    );
+      ..lineTo(size.width, size.height)..lineTo(0, size.height)..close();
+    canvas.drawPath(areaPath, Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter, end: Alignment.bottomCenter,
+        colors: [lineColor.withOpacity(0.22), lineColor.withOpacity(0)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height)));
 
-    // 2025 line
-    canvas.drawPath(
-      linePath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = lineColor,
-    );
+    canvas.drawPath(linePath, Paint()
+      ..style = PaintingStyle.stroke..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round..color = lineColor);
 
-    // Dots on 2025 points
-    for (int i = 0; i < pts25.length; i++) {
-      final pt = pts25[i];
-      canvas.drawCircle(
-        pt,
-        3.5,
-        Paint()..color = lineColor,
-      );
+    for (final pt in pts25) {
+      canvas.drawCircle(pt, 3.5, Paint()..color = lineColor);
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _LinePainter old) =>
+      old.lineColor != lineColor || old.ghostColor != ghostColor;
 }
 
 class _LegendDot extends StatelessWidget {
   final Color color;
   final String label;
-  const _LegendDot({required this.color, required this.label});
+  final Color labelColor;
+  const _LegendDot({required this.color, required this.label, required this.labelColor});
 
   @override
   Widget build(BuildContext context) {
     return Row(children: [
-      Container(
-        width: 8, height: 8,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
+      Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
       const SizedBox(width: 4),
-      Text(label,
-          style: const TextStyle(color: Color(0xFF6b7280), fontSize: 11)),
+      Text(label, style: TextStyle(color: labelColor, fontSize: 11)),
     ]);
   }
 }

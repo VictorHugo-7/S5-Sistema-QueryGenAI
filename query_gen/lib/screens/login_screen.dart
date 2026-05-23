@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../theme/theme_notifier.dart';
+import '../main.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
@@ -21,7 +23,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   bool _loading = false;
-  //bool _keepConnected = false;
   bool _obscure = true;
   bool _obscureConfirm = true;
   bool _acceptedTerms = false;
@@ -70,27 +71,16 @@ class _LoginScreenState extends State<LoginScreen> {
       _showSnack('Preencha todos os campos', AppColors.red);
       return;
     }
-
     if (!_isValidEmail(email)) {
       _showSnack('Insira um e-mail válido', AppColors.red);
       return;
     }
-
     if (!_isLogin) {
       final passwordError = _validatePassword(senha);
-      if (passwordError != null) {
-        _showSnack(passwordError, AppColors.red);
-        return;
-      }
+      if (passwordError != null) { _showSnack(passwordError, AppColors.red); return; }
       final confirm = _confirmSenhaController.text.trim();
-      if (senha != confirm) {
-        _showSnack('As senhas não coincidem', AppColors.red);
-        return;
-      }
-      if (!_acceptedTerms) {
-        _showSnack('Aceite os Termos de Uso e a Política de Privacidade', AppColors.red);
-        return;
-      }
+      if (senha != confirm) { _showSnack('As senhas não coincidem', AppColors.red); return; }
+      if (!_acceptedTerms) { _showSnack('Aceite os Termos de Uso e a Política de Privacidade', AppColors.red); return; }
     }
 
     setState(() => _loading = true);
@@ -98,24 +88,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final api = ApiService();
       if (_isLogin) {
         final data = await api.login(email, senha);
-        await AuthService().saveToken(
-          data['token'],
-          data['email'],
-          nome: data['nome'] as String?,
-        );
+        await AuthService().saveToken(data['token'], data['email'], nome: data['nome'] as String?);
         if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
-        );
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
       } else {
         final nome = _nomeController.text.trim();
         await api.register(email, senha, nome);
         _showSnack('Conta criada! Faça login.', AppColors.green);
-        setState(() {
-          _isLogin = true;
-          _clearFields();
-        });
+        setState(() { _isLogin = true; _clearFields(); });
       }
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''), AppColors.red);
@@ -137,38 +117,73 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth > 1100;
+    final ThemeNotifier notifier = MyApp.of(context);
+    final bool isDark = notifier.isDark;
 
-    if (!isDesktop) return Scaffold(backgroundColor: AppColors.bg, body: _buildLeftPanel());
+    // Botão de tema
+    final themeButton = Positioned(
+      top: 16,
+      right: 16,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+        child: IconButton(
+          key: ValueKey(isDark),
+          icon: Icon(
+            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            color: AppColors.text2Of(context),
+            size: 22,
+          ),
+          tooltip: isDark ? 'Modo claro' : 'Modo escuro',
+          onPressed: notifier.toggle,
+        ),
+      ),
+    );
+
+    if (!isDesktop) {
+      return Scaffold(
+        backgroundColor: AppColors.bgOf(context),
+        body: Stack(children: [
+          _buildLeftPanel(context),
+          themeButton,
+        ]),
+      );
+    }
 
     return Scaffold(
-      backgroundColor: AppColors.bg,
-      body: Row(
+      backgroundColor: AppColors.bgOf(context),
+      body: Stack(
         children: [
-          Expanded(flex: 4, child: _buildLeftPanel()),
-          Expanded(flex: 6, child: _buildRightPanel()),
+          Row(
+            children: [
+              Expanded(flex: 4, child: _buildLeftPanel(context)),
+              Expanded(flex: 6, child: _buildRightPanel(context)),
+            ],
+          ),
+          themeButton,
         ],
       ),
     );
   }
 
-  Widget _buildLeftPanel() {
+  Widget _buildLeftPanel(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
-          child: _buildForm(),
+          child: _buildForm(context),
         ),
       ),
     );
   }
 
-  Widget _buildRightPanel() {
+  Widget _buildRightPanel(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0b0d14),
+        color: AppColors.bgOf(context),
         border: Border(
-          left: BorderSide(color: AppColors.border.withValues(alpha: 0.5), width: 1),
+          left: BorderSide(color: AppColors.borderOf(context), width: 1),
         ),
       ),
       child: Center(
@@ -185,30 +200,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      flex: 5,
-                      child: SizedBox(height: 280, child: LineChartWidget()),
-                    ),
+                    Expanded(flex: 5, child: SizedBox(height: 280, child: LineChartWidget())),
                     SizedBox(width: 24),
-                    Expanded(
-                      flex: 4,
-                      child: SizedBox(height: 280, child: DonutChartWidget()),
-                    ),
+                    Expanded(flex: 4, child: SizedBox(height: 280, child: DonutChartWidget())),
                   ],
                 ),
                 SizedBox(height: 24),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      flex: 4,
-                      child: SizedBox(height: 280, child: BarChartWidget()),
-                    ),
+                    Expanded(flex: 4, child: SizedBox(height: 280, child: BarChartWidget())),
                     SizedBox(width: 24),
-                    Expanded(
-                      flex: 5,
-                      child: SizedBox(height: 280, child: ActivityBarsWidget()),
-                    ),
+                    Expanded(flex: 5, child: SizedBox(height: 280, child: ActivityBarsWidget())),
                   ],
                 ),
               ],
@@ -219,50 +222,34 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildForm(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // LOGO
         SizedBox(
-          width: 90,
-          height: 90,
+          width: 90, height: 90,
           child: Image.asset('assets/Logo QueryGen (1).png', fit: BoxFit.contain),
         ),
         const SizedBox(height: 6),
         RichText(
-          text: const TextSpan(children: [
-            TextSpan(
-                text: 'Query',
-                style: TextStyle(
-                    color: AppColors.text,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700)),
-            TextSpan(
-                text: 'Gen',
-                style: TextStyle(
-                    color: AppColors.accent2,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700)),
+          text: TextSpan(children: [
+            TextSpan(text: 'Query',
+                style: TextStyle(color: AppColors.textOf(context), fontSize: 18, fontWeight: FontWeight.w700)),
+            const TextSpan(text: 'Gen',
+                style: TextStyle(color: AppColors.accent2, fontSize: 18, fontWeight: FontWeight.w700)),
           ]),
         ),
         const SizedBox(height: 36),
 
         Text(
           _isLogin ? 'Bem vindo de volta!' : 'Crie sua conta',
-          style: const TextStyle(
-              color: AppColors.text,
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5),
+          style: TextStyle(color: AppColors.textOf(context), fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.5),
         ),
         const SizedBox(height: 8),
         Text(
-          _isLogin
-              ? 'Insira seu e-mail e sua senha para continuar'
-              : 'Preencha os dados abaixo para se cadastrar',
-          style: const TextStyle(color: AppColors.text2, fontSize: 14),
+          _isLogin ? 'Insira seu e-mail e sua senha para continuar' : 'Preencha os dados abaixo para se cadastrar',
+          style: TextStyle(color: AppColors.text2Of(context), fontSize: 14),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
@@ -271,9 +258,9 @@ class _LoginScreenState extends State<LoginScreen> {
         Container(
           height: 48,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.surfaceOf(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.borderOf(context)),
           ),
           child: Stack(
             children: [
@@ -288,37 +275,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.accent,
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        )
-                      ],
+                      boxShadow: [BoxShadow(color: AppColors.accent.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))],
                     ),
                   ),
                 ),
               ),
-              Row(
-                children: [
-                  _buildTab('Entrar', true),
-                  _buildTab('Cadastrar', false),
-                ],
-              ),
+              Row(children: [_buildTab('Entrar', true), _buildTab('Cadastrar', false)]),
             ],
           ),
         ),
         const SizedBox(height: 24),
 
         if (!_isLogin) ...[
-          _buildField('Nome', 'Seu nome completo', _nomeController),
+          _buildField(context, 'Nome', 'Seu nome completo', _nomeController),
           const SizedBox(height: 16),
         ],
-        _buildField('E-mail', 'exemplo@email.com', _emailController,
-            keyboardType: TextInputType.emailAddress),
+        _buildField(context, 'E-mail', 'exemplo@email.com', _emailController, keyboardType: TextInputType.emailAddress),
         const SizedBox(height: 18),
 
-        _buildPasswordField(
+        _buildPasswordField(context,
           label: 'Senha',
           hint: _isLogin ? 'Insira sua senha' : 'Mínimo 8 caracteres',
           controller: _senhaController,
@@ -328,12 +303,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (!_isLogin) ...[
           const SizedBox(height: 6),
-          const Text(
-            'Use 8+ caracteres com maiúscula, número e caractere especial.',
-            style: TextStyle(color: AppColors.text3, fontSize: 11, height: 1.4),
-          ),
+          Text('Use 8+ caracteres com maiúscula, número e caractere especial.',
+              style: TextStyle(color: AppColors.text3Of(context), fontSize: 11, height: 1.4)),
           const SizedBox(height: 18),
-          _buildPasswordField(
+          _buildPasswordField(context,
             label: 'Confirmar senha',
             hint: 'Repita sua senha',
             controller: _confirmSenhaController,
@@ -347,62 +320,32 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                height: 20,
-                width: 20,
+                height: 20, width: 20,
                 child: Checkbox(
                   value: _acceptedTerms,
                   onChanged: (v) => setState(() => _acceptedTerms = v ?? false),
                   activeColor: AppColors.accent,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4)),
-                  side: BorderSide(color: AppColors.border, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  side: BorderSide(color: AppColors.borderOf(context), width: 1.5),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Wrap(
                   children: [
-                    const Text(
-                      'Li e aceito os ',
-                      style: TextStyle(color: AppColors.text2, fontSize: 12),
-                    ),
+                    Text('Li e aceito os ', style: TextStyle(color: AppColors.text2Of(context), fontSize: 12)),
                     GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const TermsOfUseScreen()),
-                      ),
-                      child: const Text(
-                        'Termos de Uso',
-                        style: TextStyle(
-                          color: AppColors.accent2,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.accent2,
-                        ),
-                      ),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TermsOfUseScreen())),
+                      child: const Text('Termos de Uso',
+                          style: TextStyle(color: AppColors.accent2, fontSize: 12, fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline, decorationColor: AppColors.accent2)),
                     ),
-                    const Text(
-                      ' e a ',
-                      style: TextStyle(color: AppColors.text2, fontSize: 12),
-                    ),
+                    Text(' e a ', style: TextStyle(color: AppColors.text2Of(context), fontSize: 12)),
                     GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const PrivacyPolicyScreen()),
-                      ),
-                      child: const Text(
-                        'Política de Privacidade',
-                        style: TextStyle(
-                          color: AppColors.accent2,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.accent2,
-                        ),
-                      ),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                      child: const Text('Política de Privacidade',
+                          style: TextStyle(color: AppColors.accent2, fontSize: 12, fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline, decorationColor: AppColors.accent2)),
                     ),
                   ],
                 ),
@@ -412,13 +355,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
 
         const SizedBox(height: 16),
-        if (_isLogin) _buildBottomRow(),
+        if (_isLogin) _buildBottomRow(context),
         const SizedBox(height: 16),
 
-        // BOTÃO PRINCIPAL — desabilitado no cadastro enquanto checkbox não marcado
         SizedBox(
-          width: double.infinity,
-          height: 45,
+          width: double.infinity, height: 45,
           child: ElevatedButton(
             onPressed: (_loading || (!_isLogin && !_acceptedTerms)) ? null : _submit,
             style: ElevatedButton.styleFrom(
@@ -429,10 +370,7 @@ class _LoginScreenState extends State<LoginScreen> {
               elevation: 0,
             ),
             child: _loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                 : Text(_isLogin ? 'Entrar' : 'Cadastrar'),
           ),
         ),
@@ -445,17 +383,13 @@ class _LoginScreenState extends State<LoginScreen> {
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() {
-          _isLogin = isLoginTab;
-          _clearFields();
-        }),
+        onTap: () => setState(() { _isLogin = isLoginTab; _clearFields(); }),
         child: Center(
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 250),
             style: TextStyle(
-              color: active ? Colors.white : AppColors.text2,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              color: active ? Colors.white : AppColors.text2Of(context),
+              fontSize: 13, fontWeight: FontWeight.w600,
             ),
             child: Text(label),
           ),
@@ -464,124 +398,70 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildBottomRow() {
+  Widget _buildBottomRow(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Row(children: [
-          // SizedBox(
-          //   height: 24,
-          //   width: 24,
-          //   child: Checkbox(
-          //     value: _keepConnected,
-          //     onChanged: (v) => setState(() => _keepConnected = v ?? false),
-          //     activeColor: AppColors.accent,
-          //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-          //   ),
-          // ),
-          // const SizedBox(width: 8),
-          // const Text('Lembrar de mim', style: TextStyle(color: AppColors.text2, fontSize: 12)),
-        ]),
         GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-          ),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
           child: const Text('Esqueci a senha',
-              style: TextStyle(
-                  color: AppColors.accent2,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
+              style: TextStyle(color: AppColors.accent2, fontSize: 12, fontWeight: FontWeight.w600)),
         ),
       ],
     );
   }
 
-  Widget _buildField(
-    String label,
-    String hint,
-    TextEditingController controller, {
-    TextInputType keyboardType = TextInputType.text,
-  }) {
+  Widget _buildField(BuildContext context, String label, String hint, TextEditingController controller,
+      {TextInputType keyboardType = TextInputType.text}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: AppColors.text2,
-                fontSize: 12,
-                fontWeight: FontWeight.w500)),
+        Text(label, style: TextStyle(color: AppColors.text2Of(context), fontSize: 12, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
-          style: const TextStyle(color: AppColors.text, fontSize: 14),
+          style: TextStyle(color: AppColors.textOf(context), fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.text3, fontSize: 13),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    const BorderSide(color: AppColors.accent, width: 1.5)),
+            hintStyle: TextStyle(color: AppColors.text3Of(context), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: AppColors.surfaceOf(context),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPasswordField({
-    required String label,
-    required String hint,
+  Widget _buildPasswordField(BuildContext context, {
+    required String label, required String hint,
     required TextEditingController controller,
-    required bool obscure,
-    required VoidCallback onToggle,
+    required bool obscure, required VoidCallback onToggle,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: AppColors.text2,
-                fontSize: 13,
-                fontWeight: FontWeight.w500)),
+        Text(label, style: TextStyle(color: AppColors.text2Of(context), fontSize: 13, fontWeight: FontWeight.w500)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           obscureText: obscure,
-          style: const TextStyle(color: AppColors.text, fontSize: 15),
+          style: TextStyle(color: AppColors.textOf(context), fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: AppColors.text3, fontSize: 13),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: AppColors.border)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    const BorderSide(color: AppColors.accent, width: 1.5)),
+            hintStyle: TextStyle(color: AppColors.text3Of(context), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
             filled: true,
-            fillColor: AppColors.surface,
+            fillColor: AppColors.surfaceOf(context),
             suffixIcon: IconButton(
-              icon: Icon(
-                obscure ? Icons.visibility_off : Icons.visibility,
-                color: AppColors.text3,
-                size: 20,
-              ),
+              icon: Icon(obscure ? Icons.visibility_off : Icons.visibility, color: AppColors.text3Of(context), size: 20),
               onPressed: onToggle,
             ),
           ),
