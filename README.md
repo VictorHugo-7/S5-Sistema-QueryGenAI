@@ -3,7 +3,7 @@
 
 
 <!--DESCRIÇÃO-->
-> ㅤㅤ
+> Projeto para automatizar a criação de scripts de extração e visualização de dados SAP, usando IA para interpretar necessidades do usuário e gerar consultas prontas para dashboards e análises no Power BI.
 
 
 <!--STATUS-->
