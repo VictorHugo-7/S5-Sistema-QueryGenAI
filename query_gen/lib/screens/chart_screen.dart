@@ -4,6 +4,8 @@ import '../widgets/chart_widget.dart';
 import '../widgets/data_table_widget.dart';
 import '../utils/responsive.dart';
 import '../widgets/navbar/navbar.dart';
+import '../widgets/profile_modal.dart';
+import '../main.dart';
 
 class ChartScreen extends StatelessWidget {
   final List<dynamic> dados;
@@ -70,6 +72,28 @@ class ChartScreen extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          Builder(builder: (ctx) {
+                            final notifier = MyApp.of(ctx);
+                            return Row(mainAxisSize: MainAxisSize.min, children: [
+                              IconButton(
+                                icon: Icon(Icons.person_outline,
+                                    color: AppColors.text2Of(context), size: 22),
+                                onPressed: () => showProfileModal(context),
+                              ),
+                              AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 250),
+                                child: IconButton(
+                                  key: ValueKey(notifier.isDark),
+                                  icon: Icon(
+                                    notifier.isDark
+                                        ? Icons.light_mode_outlined
+                                        : Icons.dark_mode_outlined,
+                                    color: AppColors.text2Of(context), size: 22),
+                                  onPressed: notifier.toggle,
+                                ),
+                              ),
+                            ]);
+                          }),
                         ],
                       ),
                     ),
@@ -81,7 +105,6 @@ class ChartScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Gráfico
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
@@ -97,44 +120,33 @@ class ChartScreen extends StatelessWidget {
                                   children: [
                                     Icon(_iconGrafico(), color: AppColors.accent2, size: 16),
                                     const SizedBox(width: 8),
-                                    Text(
-                                      _labelGrafico(),
-                                      style: TextStyle(
-                                          color: AppColors.text2Of(context),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w500,
-                                          letterSpacing: 0.5),
-                                    ),
+                                    Text(_labelGrafico(),
+                                        style: TextStyle(
+                                            color: AppColors.text2Of(context),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            letterSpacing: 0.5)),
                                     const Spacer(),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
                                         color: AppColors.accent.withOpacity(0.15),
                                         borderRadius: BorderRadius.circular(5),
                                       ),
-                                      child: Text(
-                                        '${dados.length} registros',
-                                        style: const TextStyle(
-                                            color: AppColors.accent2,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600),
-                                      ),
+                                      child: Text('${dados.length} registros',
+                                          style: const TextStyle(
+                                              color: AppColors.accent2,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600)),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 20),
-                                ChartWidget(
-                                  dados: dados,
-                                  tipoGrafico: tipoGrafico,
-                                  eixoX: eixoX,
-                                  eixoY: eixoY,
-                                ),
+                                ChartWidget(dados: dados, tipoGrafico: tipoGrafico, eixoX: eixoX, eixoY: eixoY),
                               ],
                             ),
                           ),
                           const SizedBox(height: 20),
-                          // Tabela
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
@@ -161,8 +173,7 @@ class ChartScreen extends StatelessWidget {
                                     if (dados.length > 100)
                                       Text('Exibindo 100 primeiros',
                                           style: TextStyle(
-                                              color: AppColors.text3Of(context),
-                                              fontSize: 11)),
+                                              color: AppColors.text3Of(context), fontSize: 11)),
                                   ],
                                 ),
                                 const SizedBox(height: 14),

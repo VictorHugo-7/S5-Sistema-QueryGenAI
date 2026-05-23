@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/theme_notifier.dart';
 import '../../services/auth_service.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/history_screen.dart';
 import '../../screens/login_screen.dart';
-import '../../widgets/profile/profile.dart';
-import '../../main.dart';
 
 class NavBar extends StatelessWidget {
   final int currentIndex;
@@ -25,11 +22,6 @@ class NavBar extends StatelessWidget {
         context,
         MaterialPageRoute(builder: (_) => const HistoryScreen()),
       );
-    } else if (index == 3) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const ProfileScreen()),
-      );
     } else if (index == 4) {
       await AuthService().logout();
       if (!context.mounted) return;
@@ -43,13 +35,9 @@ class NavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeNotifier notifier = MyApp.of(context);
-    final bool isDark = notifier.isDark;
-
-    final Color bgColor    = AppColors.panelOf(context);
+    final Color bgColor     = AppColors.panelOf(context);
     final Color borderColor = AppColors.borderOf(context);
-    final Color textColor  = AppColors.textOf(context);
-    final Color text2Color = AppColors.text2Of(context);
+    final Color textColor   = AppColors.textOf(context);
 
     return Container(
       width: 260,
@@ -71,8 +59,7 @@ class NavBar extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      width: 42,
-                      height: 42,
+                      width: 42, height: 42,
                       decoration: BoxDecoration(
                         color: AppColors.accent,
                         borderRadius: BorderRadius.circular(10),
@@ -85,13 +72,11 @@ class NavBar extends StatelessWidget {
                         ],
                       ),
                       child: const Center(
-                        child: Text(
-                          'Q',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800),
-                        ),
+                        child: Text('Q',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800)),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -133,74 +118,13 @@ class NavBar extends StatelessWidget {
             ),
           ),
 
-          // Rodapé: tema + perfil + sair
+          // Sair
           Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
             child: Column(
               children: [
-                // Botão de toggle dark/light
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: InkWell(
-                    onTap: notifier.toggle,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 250),
-                            transitionBuilder: (child, anim) =>
-                                ScaleTransition(scale: anim, child: child),
-                            child: Icon(
-                              isDark
-                                  ? Icons.light_mode_outlined
-                                  : Icons.dark_mode_outlined,
-                              key: ValueKey(isDark),
-                              color: text2Color,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Text(
-                              isDark ? 'Modo claro' : 'Modo escuro',
-                              key: ValueKey(isDark),
-                              style: TextStyle(
-                                color: text2Color,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Switch(
-                            value: isDark,
-                            onChanged: (_) => notifier.toggle(),
-                            activeColor: AppColors.accent,
-                            activeTrackColor: AppColors.accent.withOpacity(0.3),
-                            inactiveThumbColor: AppColors.amber,
-                            inactiveTrackColor: AppColors.amber.withOpacity(0.25),
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
                 Divider(color: borderColor, height: 16),
-
-                _buildMenuItem(context, 3, Icons.person_outline, 'Perfil'),
-                const SizedBox(height: 8),
-                _buildMenuItem(context, 4, Icons.logout, 'Sair',
-                    isLogout: true),
+                _buildMenuItem(context, 4, Icons.logout, 'Sair', isLogout: true),
               ],
             ),
           ),
@@ -217,9 +141,7 @@ class NavBar extends StatelessWidget {
     bool isLogout = false,
   }) {
     final bool isSelected = currentIndex == index && !isLogout;
-    final Color itemColor =
-        isSelected ? AppColors.accent2 : AppColors.text2Of(context);
-    final Color selectedBgColor = AppColors.accent.withOpacity(0.15);
+    final Color itemColor = isSelected ? AppColors.accent2 : AppColors.text2Of(context);
     final Color logoutColor = AppColors.red;
 
     return Padding(
@@ -230,21 +152,21 @@ class NavBar extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? selectedBgColor : Colors.transparent,
+            color: isSelected
+                ? AppColors.accent.withOpacity(0.15)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
-              Icon(icon,
-                  color: isLogout ? logoutColor : itemColor, size: 22),
+              Icon(icon, color: isLogout ? logoutColor : itemColor, size: 22),
               const SizedBox(width: 16),
               Text(
                 title,
                 style: TextStyle(
                   color: isLogout ? logoutColor : itemColor,
                   fontSize: 14,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ],
