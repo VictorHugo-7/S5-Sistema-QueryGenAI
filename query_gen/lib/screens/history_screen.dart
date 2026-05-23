@@ -85,13 +85,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   // Estilo base para botões dentro dos cards (sobrescreve minimumSize infinito do tema)
-  static final _btnBase = ButtonStyle(
-    minimumSize: WidgetStateProperty.all(Size.zero),
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    padding: WidgetStateProperty.all(
-      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-    ),
-  );
+  // static final _btnBase = ButtonStyle(
+  //   minimumSize: WidgetStateProperty.all(Size.zero),
+  //   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+  //   padding: WidgetStateProperty.all(
+  //     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+  //   ),
+  // );
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +322,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ),
 
-          // ── Botões ── minimumSize: Size.zero para não herdar double.infinity do tema
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
             child: Row(
@@ -341,7 +340,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accent,
                     foregroundColor: Colors.white,
-                    minimumSize: Size.zero,           // ← fix principal
+                    minimumSize: Size.zero,
                     tapTargetSize:
                         MaterialTapTargetSize.shrinkWrap,
                     padding: const EdgeInsets.symmetric(
@@ -364,7 +363,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.accent2,
                     side: BorderSide(color: borderColor),
-                    minimumSize: Size.zero,           // ← fix principal
+                    minimumSize: Size.zero,
                     tapTargetSize:
                         MaterialTapTargetSize.shrinkWrap,
                     padding: const EdgeInsets.symmetric(

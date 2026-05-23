@@ -24,7 +24,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool   _obscure2 = true;
   String _email    = '';
   int    _tokenId  = 0;
-  String _senhaAtual = '';
+  //String _senhaAtual = '';
 
   final _emailController   = TextEditingController();
   final _tokenController   = TextEditingController();
@@ -39,7 +39,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   void _onSenhaChanged() {
     if (!mounted) return;
-    setState(() => _senhaAtual = _senhaController.text.trim());
+    //setState(() => _senhaAtual = _senhaController.text.trim());
   }
 
   @override
