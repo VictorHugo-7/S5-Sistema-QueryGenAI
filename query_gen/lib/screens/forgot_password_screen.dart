@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../utils/responsive.dart';
+import '../theme/theme_notifier.dart';
+import '../main.dart';
 import '../services/api_service.dart';
 import 'login_screen.dart';
+import '../widgets/graphics/activity_bars_widget.dart';
+import '../widgets/graphics/bar_chart_widget.dart';
+import '../widgets/graphics/donut_chart_widget.dart';
+import '../widgets/graphics/line_chart_widget.dart';
+import '../widgets/graphics/stat_pill_widget.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -12,12 +18,12 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  int  _step    = 0;
-  bool _loading = false;
-  bool _obscure1 = true;
-  bool _obscure2 = true;
-  String _email   = '';
-  int    _tokenId = 0;
+  int    _step     = 0;
+  bool   _loading  = false;
+  bool   _obscure1 = true;
+  bool   _obscure2 = true;
+  String _email    = '';
+  int    _tokenId  = 0;
 
   final _emailController   = TextEditingController();
   final _tokenController   = TextEditingController();
@@ -25,38 +31,68 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _confirmController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    _senhaController.addListener(_onSenhaChanged);
+  }
+
+  void _onSenhaChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _tokenController.dispose();
+    _senhaController.removeListener(_onSenhaChanged);
     _senhaController.dispose();
     _confirmController.dispose();
     super.dispose();
+  }
+
+  bool get _hasMin8      => _senhaController.text.length >= 8;
+  bool get _hasUppercase => RegExp(r'[A-Z]').hasMatch(_senhaController.text);
+  bool get _hasNumber    => RegExp(r'[0-9]').hasMatch(_senhaController.text);
+  bool get _hasSpecial   => RegExp(r'[!@#$%^&*()_+\-=\[\]{};:"\\|,.<>/?]').hasMatch(_senhaController.text);
+
+  int get _strengthScore =>
+      (_hasMin8 ? 1 : 0) + (_hasUppercase ? 1 : 0) + (_hasNumber ? 1 : 0) + (_hasSpecial ? 1 : 0);
+
+  String get _strengthLabel {
+    if (_senhaController.text.isEmpty) return '';
+    if (_strengthScore <= 1) return 'Fraca';
+    if (_strengthScore == 2) return 'Média';
+    if (_strengthScore == 3) return 'Boa';
+    return 'Forte';
+  }
+
+  Color get _strengthColor {
+    if (_senhaController.text.isEmpty) return AppColors.border;
+    if (_strengthScore <= 1) return AppColors.red;
+    if (_strengthScore == 2) return const Color(0xFFE6A817);
+    if (_strengthScore == 3) return const Color(0xFF4FC3F7);
+    return AppColors.green;
   }
 
   Future<void> _nextStep() async {
     setState(() => _loading = true);
     try {
       final api = ApiService();
-
       if (_step == 0) {
         _email = _emailController.text.trim();
         if (_email.isEmpty) throw Exception('Insira seu e-mail');
-        if (!RegExp(r'^[\w.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$').hasMatch(_email)) {
-          throw Exception('Insira um e-mail válido');
-        }
-        // Agora o backend retorna erro 404 se email não existir
+        if (!RegExp(r'^[\w.+\-]+@[a-zA-Z0-9\-]+\.[a-zA-Z]{2,}$').hasMatch(_email)) throw Exception('Insira um e-mail válido');
         await api.solicitarRecuperacao(_email);
         if (!mounted) return;
         _showSnack('Código enviado para $_email', AppColors.green);
         setState(() => _step = 1);
-
       } else if (_step == 1) {
         final codigo = _tokenController.text.trim();
         if (codigo.isEmpty) throw Exception('Insira o código');
         final data = await api.verificarToken(_email, codigo);
         _tokenId = data['tokenId'];
         setState(() => _step = 2);
-
       } else {
         final nova    = _senhaController.text.trim();
         final confirm = _confirmController.text.trim();
@@ -68,11 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         await api.redefinirSenha(_tokenId, nova);
         if (!mounted) return;
         _showSnack('Senha redefinida com sucesso!', AppColors.green);
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
-          (_) => false,
-        );
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false);
       }
     } catch (e) {
       _showSnack(e.toString().replaceAll('Exception: ', ''), AppColors.red);
@@ -83,8 +115,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   void _showSnack(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: color,
+      content: Text(msg), backgroundColor: color,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       duration: const Duration(seconds: 4),
@@ -93,185 +124,311 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isWide = Responsive.isWide(context);
-    return Scaffold(
-      backgroundColor: AppColors.bg,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, size: 20),
-          onPressed: () =>
-              _step > 0 ? setState(() => _step--) : Navigator.pop(context),
-        ),
-        title: const Text('Recuperar senha'),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: isWide ? 480 : double.infinity),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: isWide ? 48 : 28,
-                vertical: 16,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Barra de progresso
-                  Row(
-                    children: List.generate(3, (i) {
-                      final done   = i < _step;
-                      final active = i == _step;
-                      return Expanded(
-                        child: Container(
-                          margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: done || active
-                                ? AppColors.accent
-                                : AppColors.border,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 32),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1100;
+    final ThemeNotifier notifier = MyApp.of(context);
+    final bool isDark = notifier.isDark;
 
-                  Text(
-                    _step == 0
-                        ? 'Recuperar senha'
-                        : _step == 1
-                            ? 'Verificar código'
-                            : 'Nova senha',
-                    style: const TextStyle(
-                      color: AppColors.text,
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _step == 0
-                        ? 'Insira seu e-mail cadastrado para receber o código'
-                        : _step == 1
-                            ? 'Insira o código de 6 dígitos enviado para $_email'
-                            : 'Crie uma nova senha para sua conta',
-                    style: const TextStyle(
-                        color: AppColors.text2, fontSize: 14, height: 1.5),
-                  ),
-                  const SizedBox(height: 36),
-
-                  if (_step == 0)
-                    _buildField('E-mail', 'Insira seu e-mail',
-                        _emailController,
-                        keyboardType: TextInputType.emailAddress),
-
-                  if (_step == 1) ...[
-                    _buildField('Código de verificação', '000000',
-                        _tokenController,
-                        keyboardType: TextInputType.number),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: GestureDetector(
-                        onTap: () async {
-                          try {
-                            await ApiService().solicitarRecuperacao(_email);
-                            if (!mounted) return;
-                            _showSnack('Código reenviado!', AppColors.green);
-                          } catch (e) {
-                            _showSnack(
-                              e.toString().replaceAll('Exception: ', ''),
-                              AppColors.red,
-                            );
-                          }
-                        },
-                        child: const Text('Reenviar código',
-                            style: TextStyle(
-                                color: AppColors.accent2, fontSize: 14)),
-                      ),
-                    ),
-                  ],
-
-                  if (_step == 2) ...[
-                    _buildField('Nova senha', 'Mínimo 8 caracteres',
-                        _senhaController,
-                        obscure: _obscure1,
-                        toggleObscure: () =>
-                            setState(() => _obscure1 = !_obscure1)),
-                    const SizedBox(height: 18),
-                    _buildField('Confirmar senha', 'Repita a senha',
-                        _confirmController,
-                        obscure: _obscure2,
-                        toggleObscure: () =>
-                            setState(() => _obscure2 = !_obscure2)),
-                  ],
-
-                  const SizedBox(height: 32),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _loading ? null : _nextStep,
-                      child: _loading
-                          ? const SizedBox(
-                              width: 20, height: 20,
-                              child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2))
-                          : Text(_step == 0
-                              ? 'Enviar código'
-                              : _step == 1
-                                  ? 'Verificar código'
-                                  : 'Redefinir senha'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    final themeButton = Positioned(
+      top: 16, right: 16,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+        child: IconButton(
+          key: ValueKey(isDark),
+          icon: Icon(
+            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            color: AppColors.text2Of(context), size: 22,
           ),
+          tooltip: isDark ? 'Modo claro' : 'Modo escuro',
+          onPressed: notifier.toggle,
+        ),
+      ),
+    );
+
+    return Scaffold(
+      backgroundColor: AppColors.bgOf(context),
+      body: Stack(
+        children: [
+          isDesktop
+              ? Row(children: [
+                  Expanded(flex: 4, child: _buildLeftPanel(context)),
+                  Expanded(flex: 6, child: _buildRightPanel(context)),
+                ])
+              : _buildLeftPanel(context),
+          themeButton,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLeftPanel(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
+          child: _buildForm(context),
         ),
       ),
     );
   }
 
-  Widget _buildField(
-    String label,
-    String hint,
-    TextEditingController controller, {
-    TextInputType keyboardType = TextInputType.text,
-    bool obscure = false,
-    VoidCallback? toggleObscure,
-  }) {
+  Widget _buildForm(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(label,
-            style: const TextStyle(
-                color: AppColors.text2,
-                fontSize: 13,
-                fontWeight: FontWeight.w500)),
+        SizedBox(
+          width: 90, height: 90,
+          child: Image.asset('assets/Logo QueryGen (1).png', fit: BoxFit.contain),
+        ),
+        const SizedBox(height: 6),
+        RichText(
+          text: TextSpan(children: [
+            TextSpan(text: 'Query',
+                style: TextStyle(color: AppColors.textOf(context), fontSize: 18, fontWeight: FontWeight.w700)),
+            const TextSpan(text: 'Gen',
+                style: TextStyle(color: AppColors.accent2, fontSize: 18, fontWeight: FontWeight.w700)),
+          ]),
+        ),
+        const SizedBox(height: 36),
+
+        // Barra de progresso
+        Row(
+          children: List.generate(3, (i) {
+            final done = i < _step;
+            final active = i == _step;
+            return Expanded(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
+                height: 4,
+                decoration: BoxDecoration(
+                  color: done || active ? AppColors.accent : AppColors.borderOf(context),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 32),
+
+        Text(
+          _step == 0 ? 'Recuperar senha' : _step == 1 ? 'Verificar código' : 'Nova senha',
+          style: TextStyle(color: AppColors.textOf(context), fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: -0.5),
+        ),
         const SizedBox(height: 8),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          obscureText: obscure,
-          style: const TextStyle(color: AppColors.text, fontSize: 15),
-          decoration: InputDecoration(
-            hintText: hint,
-            suffixIcon: toggleObscure != null
-                ? IconButton(
-                    icon: Icon(
-                      obscure ? Icons.visibility_off : Icons.visibility,
-                      color: AppColors.text3,
-                      size: 20,
-                    ),
-                    onPressed: toggleObscure,
-                  )
-                : null,
+        Text(
+          _step == 0
+              ? 'Insira seu e-mail cadastrado para receber o código'
+              : _step == 1
+                  ? 'Insira o código de 6 dígitos enviado para $_email'
+                  : 'Crie uma nova senha para sua conta',
+          style: TextStyle(color: AppColors.text2Of(context), fontSize: 14, height: 1.5),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+
+        if (_step == 0)
+          _buildField(context, 'E-mail', 'Insira seu e-mail', _emailController, keyboardType: TextInputType.emailAddress),
+
+        if (_step == 1) ...[
+          _buildField(context, 'Código de verificação', '000000', _tokenController, keyboardType: TextInputType.number),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () async {
+              try {
+                await ApiService().solicitarRecuperacao(_email);
+                if (!mounted) return;
+                _showSnack('Código reenviado!', AppColors.green);
+              } catch (e) {
+                _showSnack(e.toString().replaceAll('Exception: ', ''), AppColors.red);
+              }
+            },
+            child: const Text('Reenviar código',
+                style: TextStyle(color: AppColors.accent2, fontSize: 13, fontWeight: FontWeight.w600)),
+          ),
+        ],
+
+        if (_step == 2) ...[
+          _buildPasswordField(context, 'Nova senha', 'Mínimo 8 caracteres', _senhaController,
+              obscure: _obscure1, onToggle: () => setState(() => _obscure1 = !_obscure1)),
+
+          if (_senhaController.text.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Força da senha:', style: TextStyle(color: AppColors.text2Of(context), fontSize: 12)),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Text(_strengthLabel, key: ValueKey(_strengthLabel),
+                      style: TextStyle(color: _strengthColor, fontSize: 12, fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            LayoutBuilder(builder: (ctx, constraints) {
+              return Stack(children: [
+                Container(height: 4, width: constraints.maxWidth,
+                    decoration: BoxDecoration(color: AppColors.borderOf(context), borderRadius: BorderRadius.circular(4))),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 350), curve: Curves.easeOut,
+                  height: 4, width: constraints.maxWidth * (_strengthScore / 4),
+                  decoration: BoxDecoration(color: _strengthColor, borderRadius: BorderRadius.circular(4)),
+                ),
+              ]);
+            }),
+          ],
+
+          const SizedBox(height: 14),
+          _buildCheckItem(context, 'Mínimo de 8 caracteres', _hasMin8),
+          _buildCheckItem(context, 'Pelo menos uma letra maiúscula', _hasUppercase),
+          _buildCheckItem(context, 'Pelo menos um número', _hasNumber),
+          _buildCheckItem(context, 'Pelo menos um caractere especial', _hasSpecial),
+          const SizedBox(height: 18),
+          _buildPasswordField(context, 'Confirmar senha', 'Repita a senha', _confirmController,
+              obscure: _obscure2, onToggle: () => setState(() => _obscure2 = !_obscure2)),
+        ],
+
+        const SizedBox(height: 28),
+
+        SizedBox(
+          width: double.infinity, height: 45,
+          child: ElevatedButton(
+            onPressed: _loading ? null : _nextStep,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accent, foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: _loading
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : Text(_step == 0 ? 'Enviar código' : _step == 1 ? 'Verificar código' : 'Redefinir senha'),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+        GestureDetector(
+          onTap: () => _step > 0 ? setState(() => _step--) : Navigator.pop(context),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.arrow_back, color: AppColors.text3Of(context), size: 14),
+              const SizedBox(width: 6),
+              Text('Voltar', style: TextStyle(color: AppColors.text3Of(context), fontSize: 13)),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCheckItem(BuildContext context, String label, bool checked) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(children: [
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Icon(Icons.check, key: ValueKey(checked), size: 16,
+              color: checked ? AppColors.green : AppColors.text3Of(context)),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(
+            color: checked ? AppColors.green : AppColors.text3Of(context),
+            fontSize: 13, fontWeight: checked ? FontWeight.w500 : FontWeight.w400)),
+      ]),
+    );
+  }
+
+  Widget _buildField(BuildContext context, String label, String hint, TextEditingController controller,
+      {TextInputType keyboardType = TextInputType.text}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: AppColors.text2Of(context), fontSize: 12, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller, keyboardType: keyboardType,
+          style: TextStyle(color: AppColors.textOf(context), fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.text3Of(context), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
+            filled: true, fillColor: AppColors.surfaceOf(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordField(BuildContext context, String label, String hint, TextEditingController controller,
+      {required bool obscure, required VoidCallback onToggle}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: AppColors.text2Of(context), fontSize: 12, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller, obscureText: obscure,
+          style: TextStyle(color: AppColors.textOf(context), fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.text3Of(context), fontSize: 13),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: AppColors.borderOf(context))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
+            filled: true, fillColor: AppColors.surfaceOf(context),
+            suffixIcon: IconButton(
+              icon: Icon(obscure ? Icons.visibility_off : Icons.visibility, color: AppColors.text3Of(context), size: 20),
+              onPressed: onToggle,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+Widget _buildRightPanel(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.bgOf(context),
+        border: Border(
+          left: BorderSide(color: AppColors.borderOf(context), width: 1),
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(48),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                StatPillsRow(),
+                SizedBox(height: 24),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 5, child: SizedBox(height: 280, child: LineChartWidget())),
+                  SizedBox(width: 24),
+                  Expanded(flex: 4, child: SizedBox(height: 280, child: DonutChartWidget())),
+                ]),
+                SizedBox(height: 24),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(flex: 4, child: SizedBox(height: 280, child: BarChartWidget())),
+                  SizedBox(width: 24),
+                  Expanded(flex: 5, child: SizedBox(height: 280, child: ActivityBarsWidget())),
+                ]),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -9,9 +9,9 @@ class DataTableWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (dados.isEmpty) {
-      return const Center(
+      return Center(
         child: Text('Nenhum dado encontrado',
-            style: TextStyle(color: AppColors.text2)),
+            style: TextStyle(color: AppColors.text2Of(context))),
       );
     }
 
@@ -20,26 +20,26 @@ class DataTableWidget extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
-        headingRowColor: WidgetStateProperty.all(AppColors.surface),
+        headingRowColor: WidgetStateProperty.all(AppColors.surfaceOf(context)),
         dataRowColor: WidgetStateProperty.resolveWith((states) =>
             states.contains(WidgetState.selected)
                 ? AppColors.accent.withOpacity(0.1)
-                : AppColors.panel),
+                : AppColors.panelOf(context)),
         dividerThickness: 0.5,
         columnSpacing: 20,
-        headingTextStyle: const TextStyle(
-          color: AppColors.text2,
+        headingTextStyle: TextStyle(
+          color: AppColors.text2Of(context),
           fontSize: 12,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.3,
         ),
-        dataTextStyle: const TextStyle(
-          color: AppColors.text,
+        dataTextStyle: TextStyle(
+          color: AppColors.textOf(context),
           fontSize: 12,
           fontFamily: 'monospace',
         ),
         border: TableBorder.all(
-          color: AppColors.border,
+          color: AppColors.borderOf(context),
           width: 0.5,
           borderRadius: BorderRadius.circular(8),
         ),
