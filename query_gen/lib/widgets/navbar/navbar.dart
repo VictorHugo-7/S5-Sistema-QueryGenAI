@@ -37,7 +37,6 @@ class NavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color bgColor     = AppColors.panelOf(context);
     final Color borderColor = AppColors.borderOf(context);
-    final Color textColor   = AppColors.textOf(context);
 
     return Container(
       width: 260,
@@ -58,34 +57,21 @@ class NavBar extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 42, height: 42,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.accent.withOpacity(0.35),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text('Q',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800)),
+                    SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Image.asset(
+                        'assets/Logo QueryGen (1).png',
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     RichText(
                       text: TextSpan(children: [
                         TextSpan(
                             text: 'Query',
                             style: TextStyle(
-                                color: textColor,
+                                color: AppColors.textOf(context),
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700)),
                         const TextSpan(
