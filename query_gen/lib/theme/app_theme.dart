@@ -4,7 +4,7 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  // ── Dark ─────────────────────────────────────────────────
+  // Dark
   static ThemeData get dark => ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.darkBg,
@@ -72,7 +72,7 @@ class AppTheme {
         useMaterial3: true,
       );
 
-  // ── Light ────────────────────────────────────────────────
+  // Light
   static ThemeData get light => ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: AppColors.lightBg,

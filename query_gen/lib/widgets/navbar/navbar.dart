@@ -60,7 +60,7 @@ class NavBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Logo ──────────────────────────────────────────
+          // Logo
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: SizedBox(
@@ -120,7 +120,7 @@ class NavBar extends StatelessWidget {
           Divider(color: borderColor, height: 1),
           const SizedBox(height: 24),
 
-          // ── Menu items ────────────────────────────────────
+          // Menu items
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -133,7 +133,7 @@ class NavBar extends StatelessWidget {
             ),
           ),
 
-          // ── Rodapé: tema + perfil + sair ──────────────────
+          // Rodapé: tema + perfil + sair
           Padding(
             padding: const EdgeInsets.only(left: 16, right: 16, bottom: 24),
             child: Column(
